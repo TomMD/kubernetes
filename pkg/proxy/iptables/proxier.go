@@ -1158,6 +1158,17 @@ func (proxier *Proxier) syncProxyRules() {
 			}
 		}
 
+		// Capture healthCheckNodePorts
+		if hcNodePort, exists := serviceUpdateResult.HCServiceNodePorts[svcName.NamespacedName]; exists {
+			writeLine(proxier.filterRules,
+				"-A", string(kubeServicesChain),
+				"-m", "comment", "--comment", fmt.Sprintf(`"%s healthCheckNodePort"`, svcNameString),
+				"-m", protocol, "-p", protocol,
+				"--dport", strconv.Itoa(int(hcNodePort)),
+				"-j", "ACCEPT",
+			)
+		}
+
 		// Capture load-balancer ingress.
 		fwChain := svcInfo.serviceFirewallChainName
 		for _, ingress := range svcInfo.LoadBalancerIPStrings() {
